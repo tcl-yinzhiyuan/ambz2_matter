@@ -12,6 +12,8 @@
 extern "C" {
 #endif
 
+#include "bt_matter_adapter_app_main.h"
+
 #ifdef CHIP_PROJECT
 
 typedef struct
@@ -60,6 +62,7 @@ typedef struct
 // Functions
 uint32_t ReadFactory(uint8_t *buffer, uint16_t *pfactorydata_len);
 uint32_t DecodeFactory(uint8_t *buffer, FactoryData *fdp, uint16_t data_len);
+void DeleteMatter(void);
 #endif /* CHIP_PROJECT */
 
 #ifdef __cplusplus

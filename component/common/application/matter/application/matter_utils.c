@@ -12,10 +12,12 @@
 
 #include "chip_porting.h"
 #include "flash_api.h"
+#include "FreeRTOS.h"
+#include "device_lock.h"
+
 #include "ameba_factory.pb.h"
 #include <pb_encode.h>
 #include <pb_decode.h>
-#include "device_lock.h"
 
 bool store_string_spake2_salt(pb_istream_t *stream, const pb_field_t *field, void **arg)
 {
@@ -307,6 +309,46 @@ uint32_t DecodeFactory(uint8_t *buffer, FactoryData *fdp, uint16_t data_len)
 
 exit:
     return ret;
+}
+
+void DeleteMatter()
+{
+    TaskStatus_t *pxTaskStatusArray;
+    volatile UBaseType_t uxArraySize, x;
+    unsigned long ulStatsAsPercentage;
+
+   /* Take a snapshot of the number of tasks in case it changes while this
+   function is executing. */
+   uxArraySize = uxTaskGetNumberOfTasks();
+
+   /* Allocate a TaskStatus_t structure for each task.  An array could be
+   allocated statically at compile time. */
+   pxTaskStatusArray = pvPortMalloc( uxArraySize * sizeof( TaskStatus_t ) );
+
+   if( pxTaskStatusArray != NULL )
+   {
+      /* Generate raw status information about each task. */
+      uxArraySize = uxTaskGetSystemState( pxTaskStatusArray,
+                                 uxArraySize,
+                                 NULL);
+
+     for( x = 0; x < uxArraySize; x++ )
+     {
+        if ((strcmp(pxTaskStatusArray[x].pcTaskName, "CHIP") == 0)
+        || (strcmp(pxTaskStatusArray[x].pcTaskName, "Uplink") == 0)
+        || (strcmp(pxTaskStatusArray[x].pcTaskName, "Downlink") == 0)
+        || (strcmp(pxTaskStatusArray[x].pcTaskName, "matter_sh") == 0))
+        {
+            printf("Deleting %s task!\n", pxTaskStatusArray[x].pcTaskName);
+            vTaskDelete(pxTaskStatusArray[x].xHandle);
+        }
+     }
+
+      vPortFree( pxTaskStatusArray );
+   }
+
+    /* now we free up bt_matter_adapter resources */
+    bt_matter_adapter_task_deinit(); // This will also delete bt_matter_adapter_task
 }
 
 #ifdef __cplusplus
