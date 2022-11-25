@@ -32,6 +32,10 @@
 #ifndef PORTABLE_H
 #define PORTABLE_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* Each FreeRTOS port has a unique portmacro.h header file.  Originally a
 pre-processor definition was used to ensure the pre-processor found the correct
 portmacro.h file for the port being used.  That scheme was deprecated in favour
@@ -165,5 +169,8 @@ void vPortEndScheduler( void ) PRIVILEGED_FUNCTION;
 }
 #endif
 
-#endif /* PORTABLE_H */
+#ifdef __cplusplus
+}
+#endif
 
+#endif /* PORTABLE_H */
