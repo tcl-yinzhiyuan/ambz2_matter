@@ -24,7 +24,6 @@ public:
     uint16_t get_command_count(uint16_t command_flags);
     void add_attribute(Attribute *attribute);
     void add_command(Command *command);
-    int8_t add_function_list(function_t *_function_list, int function_flags);
     uint16_t endpoint_id;
     uint32_t cluster_id;
     Cluster *next = NULL;
@@ -38,5 +37,5 @@ public:
     plugin_client_init_callback_t get_plugin_client_init_callback(void);
     plugin_server_init_callback_t plugin_server_init_callback = NULL;
     plugin_client_init_callback_t plugin_client_init_callback = NULL;
-    function_t *function_list = NULL;
+    function_t function_list[2] = { 0 }; // TODO: try not to hardcode array size
 };

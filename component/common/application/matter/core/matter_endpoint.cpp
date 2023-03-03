@@ -352,13 +352,11 @@ int8_t Endpoint::enable()
         ChipLogError(DeviceLayer, "Could not get task context");
         goto cleanup;
     }
-printf("%s, %d\r\n", __FUNCTION__, __LINE__);
 
     /* Add Endpoint */
     endpoint_index = matter_core_get_next_endpoint_index();
     status = emberAfSetDynamicEndpoint(endpoint_index, endpoint_id, temp_endpoint_type, _data_versions,
                                        _device_types, parent_endpoint_id);
-printf("%s, %d\r\n", __FUNCTION__, __LINE__);
     if (status != EMBER_ZCL_STATUS_SUCCESS) {
         ChipLogError(DeviceLayer, "Error adding dynamic endpoint %d: 0x%x", endpoint_id, status);
         err = -1;
