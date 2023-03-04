@@ -12,6 +12,8 @@ public:
     ~ Attribute(); // destroy
     Attribute *get_next(void);
     void set_next(Attribute *attribute);
+    int8_t get_val(ameba_matter_attr_val_t *value);
+    int8_t set_val(ameba_matter_attr_val_t *value);
     int8_t get_nvs(const char* key, ameba_matter_attr_val_t *value);
     int8_t set_nvs(const char* key, ameba_matter_attr_val_t *value);
     ameba_matter_attr_bounds_t *get_bounds(void);

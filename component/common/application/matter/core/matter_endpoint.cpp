@@ -173,7 +173,7 @@ int8_t Endpoint::enable()
 {
     /* Endpoint Type */
     EmberAfEndpointType *temp_endpoint_type = (EmberAfEndpointType *) pvPortCalloc(1, sizeof(EmberAfEndpointType));
-    if (!endpoint_type) {
+    if (!temp_endpoint_type) {
         ChipLogError(DeviceLayer, "Couldn't allocate endpoint_type");
         /* goto cleanup is not used here to avoid 'crosses initialization' of data_versions below */
         return -1;
@@ -369,7 +369,9 @@ int8_t Endpoint::enable()
         lock::chip_stack_unlock();
     }
     ChipLogError(DeviceLayer, "Dynamic endpoint %d added", endpoint_id);
+printf("%s, %d\r\n", __FUNCTION__, __LINE__);
     return err;
+printf("%s, %d\r\n", __FUNCTION__, __LINE__);
 
 cleanup:
     if (generated_command_ids) {

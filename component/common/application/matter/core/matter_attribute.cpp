@@ -1,6 +1,10 @@
+#include "matter_node.h"
 #include "matter_attribute.h"
 #include "matter_flags.h"
 #include "chip_porting.h"
+
+using namespace chip;
+extern Node *node;
 
 int8_t get_data_from_attr_val(ameba_matter_attr_val_t *val, EmberAfAttributeType *attribute_type,
                                  uint16_t *attribute_size, uint8_t *value)
@@ -644,6 +648,52 @@ void Attribute::set_next(Attribute *attribute)
     next = attribute;
 }
 
+int8_t Attribute::set_val(ameba_matter_attr_val_t *value)
+{
+    // _attribute_t *current_attribute = (_attribute_t *)attribute;
+    if (value->type == AMEBA_MATTER_VAL_TYPE_CHAR_STRING || value->type == AMEBA_MATTER_VAL_TYPE_OCTET_STRING ||
+        value->type == AMEBA_MATTER_VAL_TYPE_ARRAY)
+    {
+        /* Free old buf */
+        if (val.val._a._b)
+        {
+            free(val.val._a._b);
+        }
+        if (value->val._a._s > 0)
+        {
+            /* Alloc new buf */
+            uint8_t *new_buf = (uint8_t *)pvPortCalloc(1, value->val._a._s);
+            if (!new_buf)
+            {
+                ChipLogError(DeviceLayer, "Could not allocate new buffer");
+                return -1;
+            }
+            /* Copy to new buf and assign */
+            memcpy(new_buf, value->val._a._b, value->val._a._s);
+            value->val._a._b = new_buf;
+        }
+        else
+        {
+            ChipLogDetail(DeviceLayer, "Set val called with string with size 0");
+            value->val._a._b = NULL;
+        }
+    }
+    memcpy((void *)&val, (void *)value, sizeof(ameba_matter_attr_val_t));
+    if (flags & ATTRIBUTE_FLAG_NONVOLATILE)
+    {
+        char *key = (char *) pvPortMalloc(VARIABLE_NAME_SIZE);
+        sprintf(key, "%d/%d/%d", endpoint_id, cluster_id, attribute_id);
+        set_nvs(key, &val);
+    }
+    return 0;
+}
+
+int8_t Attribute::get_val(ameba_matter_attr_val_t *value)
+{
+    memcpy((void *)value, (void *)&val, sizeof(ameba_matter_attr_val_t));
+    return 0;
+}
+
 int8_t Attribute::get_nvs(const char *key, ameba_matter_attr_val_t *value)
 {
     // TODO: should we pass in outlen?
@@ -781,3 +831,96 @@ int8_t Attribute::set_default_value_from_current_val()
     return 0;
 }
 
+EmberAfStatus emberAfExternalAttributeReadCallback(EndpointId endpoint_id, ClusterId cluster_id,
+                                                   const EmberAfAttributeMetadata *matter_attribute, uint8_t *buffer,
+                                                   uint16_t max_read_length)
+{
+    /* Get value */
+    uint32_t attribute_id = matter_attribute->attributeId;
+    if (!node) 
+    {
+        return EMBER_ZCL_STATUS_FAILURE;
+    }
+    // endpoint_t *endpoint = endpoint::get(node, endpoint_id);
+    Endpoint *endpoint = node->get_endpoint_by_id(endpoint_id);
+    // cluster_t *cluster = cluster::get(endpoint, cluster_id);
+    Cluster *cluster = endpoint->get_cluster_by_id(cluster_id);
+    // attribute_t *attribute = attribute::get(cluster, attribute_id);
+    Attribute *attribute = cluster->get_attribute_by_id(attribute_id);
+    // esp_matter_attr_val_t val = esp_matter_invalid(NULL);
+    ameba_matter_attr_val_t value = ameba_matter_invalid(NULL);
+
+    // int flags = attribute::get_flags(attribute);
+    uint16_t flags = attribute->flags;
+    if (flags & ATTRIBUTE_FLAG_OVERRIDE) 
+    {
+        // esp_err_t err = execute_override_callback(attribute, attribute::READ, endpoint_id, cluster_id, attribute_id,
+        //                                           &val);
+        // if (err != ESP_OK) {
+        //     return EMBER_ZCL_STATUS_FAILURE;
+        // }
+    }
+    else 
+    {
+        // attribute::get_val(attribute, &val);
+        attribute->get_val(&value);
+    }
+
+    /* Print */
+    // attribute::val_print(endpoint_id, cluster_id, attribute_id, &val);
+    printf("%s, %d\r\n", __FUNCTION__, __LINE__);
+
+    /* Get size */
+    uint16_t attribute_size = 0;
+    // attribute::get_data_from_attr_val(&val, NULL, &attribute_size, NULL);
+    get_data_from_attr_val(&value, NULL, &attribute_size, NULL);
+    if (attribute_size > max_read_length)
+    {
+        ChipLogError(DeviceLayer, "Insufficient space for reading attribute: required: %d, max: %d", attribute_size, max_read_length);
+        return EMBER_ZCL_STATUS_RESOURCE_EXHAUSTED;
+    }
+
+    /* Assign value */
+    get_data_from_attr_val(&value, NULL, &attribute_size, buffer);
+    return EMBER_ZCL_STATUS_SUCCESS;
+}
+
+EmberAfStatus emberAfExternalAttributeWriteCallback(EndpointId endpoint_id, ClusterId cluster_id,
+                                                    const EmberAfAttributeMetadata *matter_attribute, uint8_t *buffer)
+{
+    /* Get value */
+    uint32_t attribute_id = matter_attribute->attributeId;
+    if (!node)
+    {
+        return EMBER_ZCL_STATUS_FAILURE;
+    }
+    // endpoint_t *endpoint = endpoint::get(node, endpoint_id);
+    Endpoint *endpoint = node->get_endpoint_by_id(endpoint_id);
+    // cluster_t *cluster = cluster::get(endpoint, cluster_id);
+    Cluster *cluster = endpoint->get_cluster_by_id(cluster_id);
+    // attribute_t *attribute = attribute::get(cluster, attribute_id);
+    Attribute *attribute = cluster->get_attribute_by_id(attribute_id);
+
+    /* Get value */
+    /* This creates a new variable value, and stores the new attribute value in the new variable.
+    The value in ameba-matter data model is updated only when attribute::set_val() is called */
+    ameba_matter_attr_val_t value = ameba_matter_invalid(NULL);
+    get_attr_val_from_data(&value, matter_attribute->attributeType, matter_attribute->size, buffer, matter_attribute);
+
+    // int flags = attribute::get_flags(attribute);
+    uint16_t flags = attribute->flags;
+    if (flags & ATTRIBUTE_FLAG_OVERRIDE)
+    {
+        // esp_err_t err = execute_override_callback(attribute, attribute::WRITE, endpoint_id, cluster_id, attribute_id,
+        //                                           &val);
+        // EmberAfStatus status = (err == ESP_OK) ? EMBER_ZCL_STATUS_SUCCESS : EMBER_ZCL_STATUS_FAILURE;
+        // return status;
+    }
+
+    /* Update value */
+    if (value.type == AMEBA_MATTER_VAL_TYPE_INVALID) {
+        return EMBER_ZCL_STATUS_FAILURE;
+    }
+    attribute->set_val(&value);
+    return EMBER_ZCL_STATUS_SUCCESS;
+}

@@ -197,13 +197,17 @@ int32_t matter_core_enable_all_endpoints()
     Endpoint *current_endpoint = node->endpoint_list;
     while(current_endpoint)
     {
+printf("%s, %d\r\n", __FUNCTION__, __LINE__);
         if (current_endpoint->enable() != 0)
         {
+printf("%s, %d\r\n", __FUNCTION__, __LINE__);
             ChipLogError(DeviceLayer, "Failed to enable endpoint %d", current_endpoint->endpoint_id);
             return -1;
         }
+printf("%s, %d\r\n", __FUNCTION__, __LINE__);
         current_endpoint = current_endpoint->get_next();
     }
+printf("%s, %d\r\n", __FUNCTION__, __LINE__);
 }
 
 namespace lock {
