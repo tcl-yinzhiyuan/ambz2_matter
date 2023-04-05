@@ -55,6 +55,7 @@ static void example_matter_light_task(void *pvParameters)
     while(test_endpoint)
     {
         Cluster *test_cluster = test_endpoint->cluster_list;
+        printf("Endpoint ID: %d\n", test_endpoint->endpoint_id);
         while(test_cluster)
         {
             printf("\tCluster ID: %d\n", test_cluster->cluster_id);

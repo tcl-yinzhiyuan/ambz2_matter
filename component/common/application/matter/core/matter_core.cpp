@@ -110,26 +110,30 @@ void matter_core_init_server(intptr_t context)
     gExampleDeviceInfoProvider.SetStorageDelegate(&Server::GetInstance().GetPersistentStorage());
     chip::DeviceLayer::SetDeviceInfoProvider(&gExampleDeviceInfoProvider);
 
-printf("%s, %d\r\n", __FUNCTION__, __LINE__);
+    printf("%s, %d\r\n", __FUNCTION__, __LINE__);
     if (matter_core_enable_all_endpoints() != 0)
     {
-printf("%s, %d\r\n", __FUNCTION__, __LINE__);
+        printf("%s, %d\r\n", __FUNCTION__, __LINE__);
         ChipLogError(DeviceLayer, "Enable all endpoints failure");
-printf("%s, %d\r\n", __FUNCTION__, __LINE__);
     }
+    printf("%s, %d\r\n", __FUNCTION__, __LINE__);
 
     sWiFiNetworkCommissioningInstance.Init();
+    printf("%s, %d\r\n", __FUNCTION__, __LINE__);
 
     // We only have network commissioning on endpoint 0.
     // TODO: configure the endpoint
     emberAfEndpointEnableDisable(0xFFFE, false);
+    printf("%s, %d\r\n", __FUNCTION__, __LINE__);
 
     if (RTW_SUCCESS != wifi_is_connected_to_ap())
     {
         // QR code will be used with CHIP Tool
         PrintOnboardingCodes(chip::RendezvousInformationFlags(chip::RendezvousInformationFlag::kBLE));
     }
+    printf("%s, %d\r\n", __FUNCTION__, __LINE__);
     xTaskNotifyGive(task_to_notify);
+    printf("%s, %d\r\n", __FUNCTION__, __LINE__);
 }
 
 CHIP_ERROR matter_core_init()
@@ -197,17 +201,18 @@ int32_t matter_core_enable_all_endpoints()
     Endpoint *current_endpoint = node->endpoint_list;
     while(current_endpoint)
     {
-printf("%s, %d\r\n", __FUNCTION__, __LINE__);
+        printf("%s, %d\r\n", __FUNCTION__, __LINE__);
         if (current_endpoint->enable() != 0)
         {
-printf("%s, %d\r\n", __FUNCTION__, __LINE__);
+        printf("%s, %d\r\n", __FUNCTION__, __LINE__);
             ChipLogError(DeviceLayer, "Failed to enable endpoint %d", current_endpoint->endpoint_id);
             return -1;
         }
-printf("%s, %d\r\n", __FUNCTION__, __LINE__);
+        printf("%s, %d\r\n", __FUNCTION__, __LINE__);
         current_endpoint = current_endpoint->get_next();
     }
-printf("%s, %d\r\n", __FUNCTION__, __LINE__);
+    printf("%s, %d\r\n", __FUNCTION__, __LINE__);
+    return 0;
 }
 
 namespace lock {
